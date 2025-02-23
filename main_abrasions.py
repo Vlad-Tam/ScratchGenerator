@@ -47,6 +47,17 @@ def draw_worn_area(img: np.ndarray, mask: np.ndarray, center: tuple, noise_level
             # Create the worn area with the new grayscale value
             worn_area = np.full(img.shape, new_value, dtype=np.uint8)
 
+    # Определяем, будет ли цвет закрашенной области зависеть от исходного изображения
+    if random.random() < 0.85:  # 85% вероятность
+        # Используем цвет, зависящий от исходного изображения
+        img[mask > 0] = cv2.addWeighted(img, 0.6, worn_area, 0.4, 0)[mask > 0]
+    else:
+        # Генерируем случайный цвет в оттенках серого
+        gray_value = random.randint(200, 255)  # Случайный серый цвет
+        uniform_gray_color = (gray_value, gray_value, gray_value)
+        worn_area = np.full(img.shape, uniform_gray_color, dtype=np.uint8)  # Перезаписываем worn_area
+        img[mask > 0] = worn_area[mask > 0]  # Используем только закрашенную область
+
     # Apply a stronger Gaussian blur to the worn area
     worn_area_blurred = cv2.GaussianBlur(worn_area, (35, 35), 0)  # Increased kernel size for stronger blur
 
@@ -80,6 +91,19 @@ def add_worn_areas(original_image: np.ndarray, num_areas: int = 5, noise_level: 
         gradient_color = tuple(random.randint(200, 255) for _ in range(3))
         draw_worn_area(image, mask, center, noise_level, gradient_color)
 
+    # Увеличиваем размер дефекта с вероятностью 10%
+    if random.random() < 0.99:
+        center = (random.randint(0, W - 1), random.randint(0, H - 1))
+        size = (int(random.randint(10, max_size[0]) * random.uniform(1.2, 6)),
+                int(random.randint(10, max_size[1]) * random.uniform(1.2, 6)))
+        mask = create_noisy_polygon(center, size, noise_level, image.shape)
+
+        # Генерируем случайный цвет в оттенках серого
+        gray_value = random.randint(200, 255)
+        uniform_gray_color = (gray_value, gray_value, gray_value)
+        worn_area = np.full(image.shape, uniform_gray_color, dtype=np.uint8)
+        image[mask > 0] = worn_area[mask > 0]  # Используем только закрашенную область
+
     return image
 
 
@@ -98,5 +122,5 @@ def func_abrasions(path: str):
 
 
 if __name__ == '__main__':
-    file_path = r'C:\Users\1\Desktop\Diploma\code\ScratchGenerator\photo1.jpg'
+    file_path = r'C:\Users\1\Desktop\Diploma\code\ScratchGenerator\photo6.jpg'
     print(func_abrasions(file_path))
